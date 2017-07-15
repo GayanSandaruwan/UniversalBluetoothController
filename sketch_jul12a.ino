@@ -2,17 +2,15 @@
 #include <IRremote.h>
 
 const int RECV_PIN = 11;
-
 IRrecv irrecv(RECV_PIN);
 IRsend irsend;
-
 decode_results results;
-
 SoftwareSerial bluetooth(9, 10);
 String command = "";
 String buttonId = "";        // During Tranmit Mode this the HEX value of the Signal
 String brand = "";
 bool blueSig = false;
+const int ledPin =  6; 
 
 void setup() {
   // put your setup code here, to run once:
@@ -21,6 +19,8 @@ void setup() {
 
   irrecv.enableIRIn(); // Start the receiver
   irrecv.blink13(true);
+  pinMode(ledPin, OUTPUT);    // Alert LED initialization
+  blinkTransmit();
   
 }
 void loop() {
@@ -36,8 +36,13 @@ void loop() {
 
      String bluetoothString = bluetooth.readString();
      Serial.println("Command Recieved : " + bluetoothString); 
+     if(bluetoothString.length() >50){
      
-     
+               bluetooth.println("+ERR;5;ERR;5;ERR^");
+               Serial.println("+ERR;5;ERR;5;ERR^");
+               blueSig = false;
+               blinkError();
+     }   
         for(int i = 0 ; i < bluetoothString.length()-1; i ++){
         if (bluetoothString.substring(i, i+1) == ";"){
           splitIndex1 = i;
@@ -71,8 +76,8 @@ void loop() {
          
   }
 
-  if(command == "LEARN"){
-    //Serial.println("LEARN Mode");
+  if(command == "LEARN"){                  // Inside Learning Mode
+    
      if (irrecv.decode(&results)) {
        
           command = "";
@@ -87,6 +92,7 @@ void loop() {
           if (brand == "NEC" || brand == "SONY" || brand == "RC5" || brand == "RC6" || brand == "SAMSUNG"){
             bluetooth.println("+LEARN;"+buttonId+";"+hexValue+";"+String(results.bits)+";"+brand+"^");
             Serial.println("String Sent to Phone  :  +LEARN;"+buttonId+";"+hexValue+";"+String(results.bits)+";"+brand+"^");
+            blinkLearn();
           }
           else if (brand == "UNKNOWN"){
             String data = "";
@@ -97,12 +103,13 @@ void loop() {
             data+=String(results.rawbuf[results.rawlen-1]*50);
             bluetooth.println("+LEARN;"+buttonId+";"+data+";"+String(results.rawlen)+";"+brand+"^");
             Serial.println("+LEARN;"+buttonId+";"+data+";"+String(results.rawlen)+";"+brand+"^");
-            
+            blinkLearn(); 
           }
           else{
             bluetooth.println("+ERR;5;ERR;5;ERR^");
             Serial.println("+ERR;5;ERR;5;ERR^");
             blueSig = false;
+            blinkError();
           }
           
           irrecv.resume();
@@ -121,11 +128,13 @@ void loop() {
         Serial.println("NEC to be sent");
         irsend.sendNEC(buttonId.toInt(), bits);   
         Serial.println("IR successfully sent");
+        blinkTransmit();
         
       } else if (brand == "SONY") {
         Serial.println("SONY to be sent");
         irsend.sendSony(buttonId.toInt(), bits);  
         Serial.println("IR successfully sent");
+        blinkTransmit();
         
       } else if (brand == "RC5") {
         Serial.println("RC5 to be sent");
@@ -136,6 +145,7 @@ void loop() {
         Serial.println("RC6 to be sent");
         irsend.sendRC6(buttonId.toInt(), bits);
         Serial.println("IR successfully sent");
+        blinkTransmit();
         
       } 
         else if (brand == "SAMSUNG") {
@@ -144,8 +154,8 @@ void loop() {
         unsigned long intButtonId = buttonId.toInt();
         Serial.println(intButtonId);
         irsend.sendSAMSUNG(intButtonId, 32);
-        
         Serial.println("IR successfully sent");
+        blinkTransmit();
         
       }else if (brand == "UNKNOWN") {
         Serial.println("UNKNOWN to be sent");
@@ -163,6 +173,13 @@ void loop() {
         }
         irsend.sendRaw(sendData,bits,38);
         Serial.println("IR successfully sent");
+        blinkTransmit();
+      }
+      else{
+          bluetooth.println("+ERR;5;ERR;5;ERR^");
+          Serial.println("+ERR;5;ERR;5;ERR^");
+          blueSig = false;
+          blinkError();  
         
       }
       
@@ -171,5 +188,76 @@ void loop() {
       bluetooth.println("+ERR;5;ERR;5;ERR^");
       Serial.println("+ERR;5;ERR;5;ERR^");
       blueSig = false;
+      blinkError();
   }
+}
+
+void blinkError(){
+  
+   digitalWrite(ledPin, HIGH);
+   delay(250);
+   digitalWrite(ledPin, LOW);
+   delay(250);
+   digitalWrite(ledPin, HIGH);
+   delay(250);
+   digitalWrite(ledPin, LOW);
+   delay(250);
+   digitalWrite(ledPin, HIGH);
+   delay(250);
+   digitalWrite(ledPin, LOW);
+   delay(250);
+   digitalWrite(ledPin, HIGH);
+   delay(250);
+   digitalWrite(ledPin, LOW);
+   delay(250);
+   digitalWrite(ledPin, HIGH);
+   delay(250);
+   digitalWrite(ledPin, LOW);
+   delay(250);
+   digitalWrite(ledPin, HIGH);
+   delay(250);
+   digitalWrite(ledPin, LOW);
+   delay(250);
+   digitalWrite(ledPin, HIGH);
+   delay(250);
+   digitalWrite(ledPin, LOW);
+   delay(250);
+   digitalWrite(ledPin, HIGH);
+   delay(250);
+   digitalWrite(ledPin, LOW);
+   delay(250);
+  
+}
+
+void blinkTransmit(){
+
+   digitalWrite(ledPin, HIGH);
+   delay(500);
+   digitalWrite(ledPin, LOW);
+   delay(500);
+   digitalWrite(ledPin, HIGH);
+   delay(500);
+   digitalWrite(ledPin, LOW);
+   delay(500);  
+}
+
+void blinkLearn(){
+
+   digitalWrite(ledPin, HIGH);
+   delay(500);
+   digitalWrite(ledPin, LOW);
+   delay(500);
+   digitalWrite(ledPin, HIGH);
+   delay(500);
+   digitalWrite(ledPin, LOW);
+   delay(500); 
+      digitalWrite(ledPin, HIGH);
+   delay(250);
+   digitalWrite(ledPin, LOW);
+   delay(250);
+   digitalWrite(ledPin, HIGH);
+   delay(250);
+   digitalWrite(ledPin, LOW);
+   delay(250);
+   
 }
