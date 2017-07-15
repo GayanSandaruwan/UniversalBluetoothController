@@ -1,6 +1,4 @@
 #include "SoftwareSerial.h"
-#include <string.h>
-#include <sstream.h>
 #include <IRremote.h>
 
 const int RECV_PIN = 11;
@@ -14,6 +12,7 @@ SoftwareSerial bluetooth(9, 10);
 String command = "";
 String buttonId = "";        // During Tranmit Mode this the HEX value of the Signal
 String brand = "";
+bool blueSig = false;
 
 void setup() {
   // put your setup code here, to run once:
@@ -62,18 +61,23 @@ void loop() {
       brand = bluetoothString.substring(splitIndex2+1,splitIndex3);
       bits = bluetoothString.substring(splitIndex3+1).toInt();
       
-      Serial.print("buttonId :");
-      Serial.print(buttonId + ",");
-      Serial.print("bits :");
+      Serial.print("buttonId :"+buttonId);
+      Serial.print("   , Brand  : " + brand);
+      Serial.print("  , bits :");
       Serial.println(bits);
+      
+      
+      blueSig = true;
          
   }
 
   if(command == "LEARN"){
     //Serial.println("LEARN Mode");
      if (irrecv.decode(&results)) {
-    
-          String hexValue = String(results.value,HEX);
+       
+          command = "";
+                    
+          String hexValue = String(results.value,DEC);
           Serial.print("hexValue In Raw :" + results.value);
           Serial.print("hexValue :");
           Serial.print(hexValue+" ");
@@ -81,7 +85,8 @@ void loop() {
           
           
           if (brand == "NEC" || brand == "SONY" || brand == "RC5" || brand == "RC6" || brand == "SAMSUNG"){
-            bluetooth.println("+LEARN;"+buttonId+";"+hexValue+";"+String(results.bits)+"^");
+            bluetooth.println("+LEARN;"+buttonId+";"+hexValue+";"+String(results.bits)+";"+brand+"^");
+            Serial.println("String Sent to Phone  :  +LEARN;"+buttonId+";"+hexValue+";"+String(results.bits)+";"+brand+"^");
           }
           else if (brand == "UNKNOWN"){
             String data = "";
@@ -90,20 +95,27 @@ void loop() {
               data+=",";
             }
             data+=String(results.rawbuf[results.rawlen-1]*50);
-            bluetooth.println("+LEARN;"+buttonId+";"+data+";"+String(results.bits)+"^");
-            Serial.println("data :" + data);
+            bluetooth.println("+LEARN;"+buttonId+";"+data+";"+String(results.rawlen)+";"+brand+"^");
+            Serial.println("+LEARN;"+buttonId+";"+data+";"+String(results.rawlen)+";"+brand+"^");
             
           }
-          command = "";
+          else{
+            bluetooth.println("+ERR;5;ERR;5;ERR^");
+            Serial.println("+ERR;5;ERR;5;ERR^");
+            blueSig = false;
+          }
           
           irrecv.resume();
-         
+          
       }  
+      blueSig = false;      
   }
   
-  else if(command == "TRANS"){
+  else if(command == "TRANS"){                              // Device In the Transmission Mode
     //Serial.println("TRANS Mode");
-      Serial.println("Recieved the command to be sent");    
+      command = "";
+      blueSig = false;
+      Serial.println("Recieved the TRANS to be sent");    
     
       if (brand == "NEC") {
         Serial.println("NEC to be sent");
@@ -127,10 +139,11 @@ void loop() {
         
       } 
         else if (brand == "SAMSUNG") {
-        Serial.println("SAMSUNG to be sent");
-        Serial.println("SAMSUNG_buttonID :"+("0x"+buttonId).toInt());
-        Serial.println("SAMSUNG_buttonID :"+ (buttonId,HEX));
-        irsend.sendSAMSUNG(buttonId.toInt(), bits);
+        Serial.println("Sending SAMSUNG");
+        Serial.println("BUtton ID"+buttonId);
+        unsigned long intButtonId = buttonId.toInt();
+        Serial.println(intButtonId);
+        irsend.sendSAMSUNG(intButtonId, 32);
         
         Serial.println("IR successfully sent");
         
@@ -152,10 +165,11 @@ void loop() {
         Serial.println("IR successfully sent");
         
       }
-      command = "";
+      
   }
-  else{
-      bluetooth.println("+ERR;5;ERR;5^");
-      Serial.println("+ERR;5;ERR;5^");
+  else if(blueSig){                                                       //Signal Recieved with Error Charactor
+      bluetooth.println("+ERR;5;ERR;5;ERR^");
+      Serial.println("+ERR;5;ERR;5;ERR^");
+      blueSig = false;
   }
 }
