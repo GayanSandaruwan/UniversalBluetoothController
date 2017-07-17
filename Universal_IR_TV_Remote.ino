@@ -1,6 +1,6 @@
 #include "SoftwareSerial.h"
 #include <IRremote.h>
-
+//irb led :Pin 3
 const int RECV_PIN = 11;
 IRrecv irrecv(RECV_PIN);
 IRsend irsend;
@@ -27,7 +27,7 @@ void loop() {
   // put your main code here, to run repeatedly:
 
   
-  int bits;
+  int bits=32;
   int splitIndex1 = 0;
   int splitIndex2 = 0;
   int splitIndex3 = 0;
@@ -123,35 +123,35 @@ void loop() {
       command = "";
       blueSig = false;
       Serial.println("Recieved the TRANS to be sent");    
+      unsigned long intButtonId = buttonId.toInt();
     
       if (brand == "NEC") {
         Serial.println("NEC to be sent");
-        irsend.sendNEC(buttonId.toInt(), bits);   
+        irsend.sendNEC(intButtonId, bits);   
         Serial.println("IR successfully sent");
         blinkTransmit();
         
       } else if (brand == "SONY") {
         Serial.println("SONY to be sent");
-        irsend.sendSony(buttonId.toInt(), bits);  
+        irsend.sendSony(intButtonId, bits);  
         Serial.println("IR successfully sent");
         blinkTransmit();
         
       } else if (brand == "RC5") {
         Serial.println("RC5 to be sent");
-        irsend.sendRC5(buttonId.toInt(), bits);  
+        irsend.sendRC5(intButtonId, bits);  
         Serial.println("IR successfully sent");
 
       } else if (brand == "RC6") {
         Serial.println("RC6 to be sent");
-        irsend.sendRC6(buttonId.toInt(), bits);
+        irsend.sendRC6(intButtonId, bits);
         Serial.println("IR successfully sent");
         blinkTransmit();
         
       } 
         else if (brand == "SAMSUNG") {
         Serial.println("Sending SAMSUNG");
-        Serial.println("BUtton ID"+buttonId);
-        unsigned long intButtonId = buttonId.toInt();
+        Serial.println("BUtton ID"+buttonId);   
         Serial.println(intButtonId);
         irsend.sendSAMSUNG(intButtonId, 32);
         Serial.println("IR successfully sent");
